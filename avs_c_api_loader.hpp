@@ -27,7 +27,7 @@ struct avisynth_c_api_pointers
 #define FUNC(name) \
     using _type_##name = name##_func; \
     _type_##name name;
-#include "avs_function_list.def"
+#include "avs_c_api_functions.inc"
 #undef FUNC
 };
 
