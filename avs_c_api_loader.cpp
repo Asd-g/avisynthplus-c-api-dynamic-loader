@@ -3,14 +3,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <type_traits>
 #include <unordered_map>
 
 #include "avs_c_api_loader.hpp"
 
 #ifdef _WIN32
 using LibHandle = HMODULE;
-constexpr const wchar_t* AVS_LIB_NAME{ L"avisynth.dll" };
+constexpr const wchar_t* AVS_LIB_NAME{L"avisynth.dll"};
 
 inline void* avs_open_library()
 {
@@ -29,9 +28,9 @@ inline void* avs_get_proc_address(void* handle, const char* name)
 #include <dlfcn.h>
 using LibHandle = void*;
 #if __APPLE__
-constexpr const char* AVS_LIB_NAME{ "libavisynth.dylib" };
+constexpr const char* AVS_LIB_NAME{"libavisynth.dylib"};
 #else
-constexpr const char* AVS_LIB_NAME{ "libavisynth.so" };
+constexpr const char* AVS_LIB_NAME{"libavisynth.so"};
 #endif
 
 inline void* avs_open_library()
@@ -49,13 +48,13 @@ inline void* avs_get_proc_address(void* handle, const char* name)
 }
 #endif
 
-std::atomic<long> avisynth_c_api_loader::ref_count_{ 0 };
+std::atomic<long> avisynth_c_api_loader::ref_count_{0};
 avisynth_c_api_loader avisynth_c_api_loader::instance_;
 
-template <typename T>
+template<typename T>
 bool avisynth_c_api_loader::load_single_function(const char* name, T& ptr_member, bool required)
 {
-    void* addr{ avs_get_proc_address(library_handle_, name) };
+    void* addr{avs_get_proc_address(library_handle_, name)};
     if (addr)
     {
         ptr_member = reinterpret_cast<T>(addr);
@@ -74,8 +73,8 @@ bool avisynth_c_api_loader::load_single_function(const char* name, T& ptr_member
     }
 }
 
-bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int required_interface_version, const int required_bugfix_version,
-    const std::initializer_list<std::string_view>& required_names)
+bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int required_interface_version,
+    const int required_bugfix_version, const std::initializer_list<std::string_view>& required_names)
 {
     // --- Load Library ---
     library_handle_ = avs_open_library();
@@ -94,7 +93,7 @@ bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int
     }
 
     // --- Load Loader Essentials (check_version, at_exit) ---
-    bool essentials_ok{ true };
+    bool essentials_ok{true};
     essentials_ok &= load_single_function("avs_check_version", api_pointers_.avs_check_version, true);
     essentials_ok &= load_single_function("avs_at_exit", api_pointers_.avs_at_exit, true);
     essentials_ok &= load_single_function("avs_get_env_property", api_pointers_.avs_get_env_property, false);
@@ -110,8 +109,7 @@ bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int
     int host_major_version{};
     int host_bugfix_version{};
 
-    bool version_ok{ [&]()
-    {
+    bool version_ok{[&]() {
         if (api_pointers_.avs_get_env_property)
         {
             host_major_version = static_cast<int>(api_pointers_.avs_get_env_property(env, AVS_AEP_INTERFACE_VERSION));
@@ -130,14 +128,15 @@ bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int
             host_bugfix_version = 0;
             return (!api_pointers_.avs_check_version(env, required_interface_version));
         }
-    }() };
+    }()};
 
     if (!version_ok)
     {
         static char version_error_msg[200]; // Static buffer for safety
         if (api_pointers_.avs_get_env_property)
-            snprintf(version_error_msg, sizeof(version_error_msg), "Avisynth C API Error: Plugin requires interface >= %d.%d, but found %d.%d.",
-                required_interface_version, required_bugfix_version, host_major_version, host_bugfix_version);
+            snprintf(version_error_msg, sizeof(version_error_msg),
+                "Avisynth C API Error: Plugin requires interface >= %d.%d, but found %d.%d.", required_interface_version,
+                required_bugfix_version, host_major_version, host_bugfix_version);
         else
             // Less precise error message
             snprintf(version_error_msg, sizeof(version_error_msg),
@@ -151,18 +150,18 @@ bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int
     // --- Load functions explicitly required by the plugin ---
     // Build a map from name to member pointer offset for efficient lookup
     std::unordered_map<std::string_view, size_t> pointer_offset_map{};
-    avisynth_c_api_pointers* const base_ptr{ &api_pointers_ }; // Base address for offset calculation
-#define FUNC(name) pointer_offset_map[#name] = reinterpret_cast<char*>( &(api_pointers_.name) ) - reinterpret_cast<char*>(base_ptr);
+    avisynth_c_api_pointers* const base_ptr{&api_pointers_}; // Base address for offset calculation
+#define FUNC(name) pointer_offset_map[#name] = reinterpret_cast<char*>(&(api_pointers_.name)) - reinterpret_cast<char*>(base_ptr);
 #include "avs_c_api_functions.inc"
 #undef FUNC
 
     for (const std::string_view req_name_sv : required_names)
     {
-        auto it{ pointer_offset_map.find(req_name_sv) };
+        auto it{pointer_offset_map.find(req_name_sv)};
         if (it != pointer_offset_map.end())
         {
             // Calculate the address of the member pointer using the offset
-            void** target_member_ptr_addr{ reinterpret_cast<void**>(reinterpret_cast<char*>(base_ptr) + it->second) };
+            void** target_member_ptr_addr{reinterpret_cast<void**>(reinterpret_cast<char*>(base_ptr) + it->second)};
             // Load the function using its name and store it via the calculated address
             if (!load_single_function(req_name_sv.data(), *target_member_ptr_addr, true))
             {
@@ -182,14 +181,15 @@ bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int
     }
 
     // Load all other known functions optionally ---
-#define FUNC(name) \
-        if (api_pointers_.name == nullptr) { /* Load only if not already loaded as required */ \
-            load_single_function(#name, api_pointers_.name, false); \
-        }
+#define FUNC(name)                                              \
+    if (api_pointers_.name == nullptr)                          \
+    { /* Load only if not already loaded as required */         \
+        load_single_function(#name, api_pointers_.name, false); \
+    }
 #include "avs_c_api_functions.inc"
 #undef FUNC
 
-// --- Register Cleanup ---
+    // --- Register Cleanup ---
     api_pointers_.avs_at_exit(env, avisynth_c_api_loader::cleanup_callback, nullptr);
 
     initialized_ = true;
@@ -235,7 +235,7 @@ const avisynth_c_api_pointers* avisynth_c_api_loader::get_api(AVS_ScriptEnvironm
             // Loading failed. Decrement count back and return null.
             instance_.ref_count_.fetch_sub(1, std::memory_order_relaxed);
             g_avs_api = nullptr; // Ensure global pointer is null
-            return nullptr; // Error message is in instance_.last_error_message_
+            return nullptr;      // Error message is in instance_.last_error_message_
         }
     }
     else
@@ -247,8 +247,7 @@ const avisynth_c_api_pointers* avisynth_c_api_loader::get_api(AVS_ScriptEnvironm
             int loaded_major_version{};
             int loaded_bugfix_version{};
 
-            bool version_ok{ [&]()
-            {
+            bool version_ok{[&]() {
                 if (instance_.api_pointers_.avs_get_env_property)
                 {
                     loaded_major_version = static_cast<int>(instance_.api_pointers_.avs_get_env_property(env, AVS_AEP_INTERFACE_VERSION));
@@ -267,14 +266,15 @@ const avisynth_c_api_pointers* avisynth_c_api_loader::get_api(AVS_ScriptEnvironm
                     loaded_bugfix_version = 0;
                     return (!instance_.api_pointers_.avs_check_version(env, required_interface_version));
                 }
-            }() };
+            }()};
 
             if (!version_ok)
             {
                 static char version_error_msg[200]; // Static buffer for safety
                 if (instance_.api_pointers_.avs_get_env_property)
-                    snprintf(version_error_msg, sizeof(version_error_msg), "Avisynth C API Error: Plugin requires interface >= %d.%d, but found %d.%d.",
-                        required_interface_version, required_bugfix_version, loaded_major_version, loaded_bugfix_version);
+                    snprintf(version_error_msg, sizeof(version_error_msg),
+                        "Avisynth C API Error: Plugin requires interface >= %d.%d, but found %d.%d.", required_interface_version,
+                        required_bugfix_version, loaded_major_version, loaded_bugfix_version);
                 else
                     // Less precise error message
                     snprintf(version_error_msg, sizeof(version_error_msg),
@@ -299,7 +299,6 @@ const avisynth_c_api_pointers* avisynth_c_api_loader::get_api(AVS_ScriptEnvironm
     g_avs_api = &instance_.api_pointers_; // Set global pointer
     return g_avs_api;
 }
-
 
 const char* avisynth_c_api_loader::get_last_error()
 {
