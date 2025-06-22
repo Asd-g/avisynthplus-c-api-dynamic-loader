@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-06-22
+
+### Added
+- **CMake Build System:**
+    - The project is now a CMake project.
+    - Supports two usage models:
+        1.  **Submodule:** Can be built directly from source via `add_subdirectory`.
+        2.  **System Package:** Can be installed and then found via `find_package(avs_c_api_loader)`.
+    - Provides an imported `ALIAS` target `avs_c_api_loader::avs_c_api_loader` for consistent linking.
+    - Includes a `FindAvisynthPlus.cmake` module to automatically locate the required Avisynth+ headers.
+
 ## [1.1.0] - 2025-05-11
 
 ### Added

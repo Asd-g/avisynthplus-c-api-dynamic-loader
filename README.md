@@ -18,6 +18,113 @@ The loader handles:
     - `get_opt_array_as_unique_ptr<T>`: Converts an optional array argument to `converted_array<T>` (holding `std::unique_ptr<T[]>`) (suitable for primitive values).
     - `get_opt_array_as_vector<T>`: Converts an optional array argument to `std::vector<T>` (suitable for numbers, `std::string`, `avs_clip_ptr`).
 
+---
+
+## Building and Integration
+
+This library is designed to be integrated into your plugin's build process using its CMake build system. It supports two primary methods of consumption:
+
+1.  **As a Git Submodule (Recommended for most plugins)**
+2.  **As a Pre-installed System Library**
+
+In both cases, the library provides an imported `ALIAS` target `avs_c_api_loader::avs_c_api_loader` for easy and consistent linking.
+
+### Method 1: Using as a Git Submodule
+
+This is the simplest way to get started. Add `avs_c_api_loader` as a submodule to your project, for example, in an `external/` directory.
+
+**Your Plugin's `CMakeLists.txt`:**
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(MyAvisynthPlugin LANGUAGES CXX)
+
+# 1. Find the Avisynth+ headers needed by the helper.
+#    The helper provides a FindAvisynthPlus.cmake module for this.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/avs_c_api_loader/cmake")
+find_package(AvisynthPlus REQUIRED)
+
+# 2. Add the helper library as a subdirectory.
+add_subdirectory(external/avs_c_api_loader)
+
+# 3. Define your plugin target.
+add_library(my_plugin MODULE src/my_plugin.cpp)
+
+# 4. Link to the helper.
+#    This automatically handles include paths and dependencies.
+target_link_libraries(my_plugin PRIVATE avs_c_api_loader::avs_c_api_loader)
+```
+
+### Method 2: Using as an Installed Library
+
+This method is for advanced users who may want to share a single build of the helper library across multiple projects.
+
+**Step A: Build and Install `avs_c_api_loader`**
+
+First, build and install the helper library to a location of your choice.
+
+```bash
+# Clone the repository
+git clone https://github.com/Asd-g/avisynthplus-c-api-dynamic-loader avs_c_api_loader
+cd avs_c_api_loader
+
+# Configure, build, and install.
+# You must tell CMake where to find the Avisynth+ headers for the build.
+cmake -B build -D CMAKE_INSTALL_PREFIX=C:/dev/install -D CMAKE_PREFIX_PATH=C:/path/to/avisynth/sdk
+cmake --build build
+cmake --install build
+```
+
+**Step B: Your Plugin's `CMakeLists.txt`**
+
+Your plugin can now find the pre-installed package using `find_package`.
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(MyAvisynthPlugin LANGUAGES CXX)
+
+# 1. Find the pre-installed helper library.
+#    The helper's own config file will find its dependency (Avisynth+ headers).
+find_package(avs_c_api_loader REQUIRED)
+
+# 2. Define your plugin target.
+add_library(my_plugin MODULE src/my_plugin.cpp)
+
+# 3. Link to the helper.
+target_link_libraries(my_plugin PRIVATE avs_c_api_loader::avs_c_api_loader)
+```
+
+When configuring your plugin, you must tell CMake where to find the installed helper:
+
+```bash
+cmake -B build -D CMAKE_PREFIX_PATH=C:/dev/install
+```
+
+### Providing a User-Friendly Switch
+
+You can combine both methods in your plugin's `CMakeLists.txt` to give users the choice:
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(MyAvisynthPlugin LANGUAGES CXX)
+
+# Add a user-configurable option
+option(USE_SYSTEM_AVS_HELPER "Use an installed version of the helper" OFF)
+
+if(USE_SYSTEM_AVS_HELPER)
+    find_package(avs_c_api_loader REQUIRED)
+else()
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/avs_c_api_loader/cmake")
+    find_package(AvisynthPlus REQUIRED)
+    add_subdirectory(external/avs_c_api_loader)
+endif()
+
+# ...
+target_link_libraries(my_plugin PRIVATE avs_c_api_loader::avs_c_api_loader)
+```
+
+---
+
 #### Usage:
 
 ```
