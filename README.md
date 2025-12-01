@@ -199,7 +199,7 @@ const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
 
     // List the C API functions absolutely essential for this plugin to operate.
     // Loading will fail if any of these cannot be found.
-    static constexpr std::initializer_list<std::string_view> required_functions
+    static constexpr std::string_view required_functions_storage[]
     {
         // Functions often needed for basic filter operation:
         "avs_pool_free",           // avs loader helper functions
@@ -224,6 +224,7 @@ const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
         "avs_new_c_filter",
         "avs_add_function"
     };
+    static constexpr std::span<const std::string_view> required_functions{ required_functions_storage };
 
     // This call initializes the loader (if not already done), checks requirements,
     // and sets the global g_avs_api pointer on success.

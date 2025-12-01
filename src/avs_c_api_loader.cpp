@@ -74,7 +74,7 @@ bool avisynth_c_api_loader::load_single_function(const char* name, T& ptr_member
 }
 
 bool avisynth_c_api_loader::load_functions(AVS_ScriptEnvironment* env, const int required_interface_version,
-    const int required_bugfix_version, const std::initializer_list<std::string_view>& required_names)
+    const int required_bugfix_version, const std::span<const std::string_view>& required_names)
 {
     // --- Load Library ---
     library_handle_ = avs_open_library();
@@ -223,7 +223,7 @@ void AVSC_CC avisynth_c_api_loader::cleanup_callback(void* /*user_data*/, AVS_Sc
 }
 
 const avisynth_c_api_pointers* avisynth_c_api_loader::get_api(AVS_ScriptEnvironment* env, const int required_interface_version,
-    const int required_bugfix_version, const std::initializer_list<std::string_view>& required_function_names)
+    const int required_bugfix_version, const std::span<const std::string_view>& required_function_names)
 {
     // Increment reference count first.
     // If this is the first call (count was 0 before increment), initialize.

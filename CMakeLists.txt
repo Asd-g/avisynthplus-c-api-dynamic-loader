@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(avs_c_api_loader VERSION 1.1.0 LANGUAGES CXX)
+project(avs_c_api_loader VERSION 1.3.0 LANGUAGES CXX)
 
 message(STATUS "Configuring avs_c_api_loader...")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -22,6 +22,10 @@ target_include_directories(avs_c_api_loader PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<INSTALL_INTERFACE:include>
 )
+
+if (UNIX)
+    set_target_properties(avs_c_api_loader PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # --- Installation Rules ---
 include(CMakePackageConfigHelpers)

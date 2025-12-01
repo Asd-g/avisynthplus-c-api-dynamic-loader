@@ -13,9 +13,9 @@ namespace avs_loader_meta
 
 #include <atomic>
 #include <cstddef>
-#include <initializer_list>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -57,7 +57,7 @@ public:
      * @return Pointer to the loaded API pointers on success, nullptr on failure. Check get_last_error() on failure.
      */
     static const avisynth_c_api_pointers* get_api(AVS_ScriptEnvironment* env, const int required_interface_version,
-        const int required_bugfix_version, const std::initializer_list<std::string_view>& required_function_names);
+        const int required_bugfix_version, const std::span<const std::string_view>& required_function_names);
 
     /**
      * @brief Gets the last error message if get_api returned nullptr.
@@ -77,7 +77,7 @@ private:
 
     // Core loading function (called only once)
     bool load_functions(AVS_ScriptEnvironment* env, const int required_interface_version, const int required_bugfix_version,
-        const std::initializer_list<std::string_view>& required_names);
+        const std::span<const std::string_view>& required_names);
 
     // Unload function (called only once when ref_count hits zero)
     void unload_library();
@@ -291,6 +291,12 @@ namespace avs_helpers
      * @param index The 0-based index of the argument in the 'args' array.
      * @return std::optional<T> containing the value if present and convertible, otherwise std::nullopt.
      */
+
+    template<typename T>
+    struct always_false : std::false_type
+    {
+    };
+
     template<typename T>
     AVS_FORCEINLINE std::optional<T> get_opt_arg(AVS_ScriptEnvironment* env, AVS_Value args, int index)
     {
@@ -321,7 +327,7 @@ namespace avs_helpers
         else if constexpr (std::is_same_v<T, AVS_Value>)
             return val;
         else
-            static_assert(std::false_type::value, "get_opt_arg: Unsupported type T");
+            static_assert(always_false<T>::value, "get_opt_arg: Unsupported type T");
 
         return std::nullopt;
     }
